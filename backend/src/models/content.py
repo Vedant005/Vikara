@@ -45,6 +45,15 @@ class ContentJob(Base):
     transcript = relationship("VideoTranscript", lazy="joined")
     brand_profile = relationship("BrandProfile", lazy="joined")
 
+    @property
+    def title(self) -> str | None:
+        if self.transcript and self.transcript.title:
+            return self.transcript.title
+        blog = self.get_asset("blog")
+        if blog and blog.content and isinstance(blog.content, dict):
+            return blog.content.get("title")
+        return None
+
     def get_asset(self, asset_type: str) -> "ContentAsset | None":
         for a in self.assets:
             if a.asset_type == asset_type:

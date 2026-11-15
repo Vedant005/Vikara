@@ -57,18 +57,30 @@ async def repurpose_video(
 
     session_id = get_session_id(request)
 
-    existing = await db.execute(
-        select(ContentJob).where(
+    # Guard: Stop duplicate URL submissions before triggering Supadata or LLM pipelines
+    existing_stmt = (
+        select(ContentJob)
+        .where(
             ContentJob.session_id == session_id,
-            ContentJob.youtube_url == url_str,
-            ContentJob.status.in_(["processing", "queued"]),
+            (ContentJob.video_id == video_id) | (ContentJob.youtube_url == url_str),
+            ContentJob.status.in_(["processing", "queued", "completed", "partial_success"]),
         )
+        .order_by(desc(ContentJob.id))
     )
-    if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=409,
-            detail="A job for this URL is already queued or processing.",
-        )
+    existing_res = await db.execute(existing_stmt)
+    existing_job = existing_res.scalars().first()
+
+    if existing_job:
+        if existing_job.status in ("processing", "queued"):
+            raise HTTPException(
+                status_code=409,
+                detail=f"A job for this video is already active (Job #{existing_job.id}). Please check Recent Jobs.",
+            )
+        elif existing_job.status in ("completed", "partial_success"):
+            raise HTTPException(
+                status_code=409,
+                detail=f"This video has already been repurposed (Job #{existing_job.id}). You can view or export it from Recent Jobs.",
+            )
 
     new_job = ContentJob(
         youtube_url=url_str,

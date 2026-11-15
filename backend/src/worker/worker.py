@@ -91,7 +91,7 @@ async def process_repurpose_job(ctx: dict[str, Any], job_id: int, url: str) -> s
 
     # Emit job_started event
     await event_service.emit(
-        job_id, "job_started", {"message": "Job picked up by background worker."}
+        job_id, "job_started", {"message": "Starting video analysis and content generation."}
     )
 
     try:

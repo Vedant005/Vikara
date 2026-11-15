@@ -134,5 +134,6 @@ class HistoryResponse(BaseModel):
     youtube_url: str
     status: str
     created_at: datetime
+    title: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

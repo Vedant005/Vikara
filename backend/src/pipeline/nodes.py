@@ -37,7 +37,7 @@ async def node_ingest_and_normalize(state: PipelineState) -> dict[str, Any]:
     url = state["url"]
 
     await event_service.emit(
-        job_id, "fetching_transcript", {"message": f"Fetching transcript for video {video_id}..."}
+        job_id, "fetching_transcript", {"message": "Fetching and extracting video transcript..."}
     )
 
     segments, metadata = await transcript_service.get_or_fetch_transcript(video_id, url)
@@ -79,7 +79,7 @@ async def node_map_reduce_brief(state: PipelineState) -> dict[str, Any]:
         return {"canonical_brief": cached_brief.model_dump()}
 
     await event_service.emit(
-        job_id, "synthesizing_brief", {"message": "Executing Map-Reduce over transcript chunks..."}
+        job_id, "synthesizing_brief", {"message": "Analysing topics and structuring content..."}
     )
 
     from src.schemas.transcript import TranscriptSegment
@@ -325,7 +325,7 @@ async def node_deterministic_verification(state: PipelineState) -> dict[str, Any
     await event_service.emit(
         job_id,
         "verifying_assets",
-        {"message": "Running deterministic validation and quote grounding..."},
+        {"message": "Evaluating content quality and verifying accuracy..."},
     )
 
     full_transcript_text = " ".join([s.get("text", "") for s in raw_segments])
