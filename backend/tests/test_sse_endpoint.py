@@ -57,6 +57,16 @@ async def test_repurpose_creates_queued_job_and_dispatches():
             assert data["status"] == "queued"
             assert "job_id" in data
 
+            # Duplicate submission should be rejected with 409 Conflict
+            resp_duplicate = await client.post(
+                "/api/v1/repurpose",
+                json={"url": f"https://www.youtube.com/watch?v={unique_vid}"},
+            )
+            assert resp_duplicate.status_code == 409
+            dup_data = resp_duplicate.json()
+            assert "already active" in dup_data["detail"].lower()
+            assert f"job #{data['job_id']}" in dup_data["detail"].lower()
+
 
 @pytest.mark.asyncio
 async def test_retry_single_asset_endpoint():
