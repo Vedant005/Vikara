@@ -39,29 +39,37 @@ const KNOWN_EVENTS = [
 ];
 
 const STAGE_LABELS: Record<string, string> = {
-  job_created: "Job Queued",
-  job_started: "Worker Started",
-  fetching_transcript: "Extracting YouTube Transcript",
+  job_created: "Queued",
+  job_started: "Starting Content Pipeline",
+  fetching_transcript: "Fetching Video Transcript",
   transcript_ready: "Transcript Extracted",
-  chunking_transcript: "Semantic Chunking",
-  transcript_chunked: "Semantic Chunks Ready",
+  chunking_transcript: "Analysing Content Structure",
+  transcript_chunked: "Content Segmented",
+  synthesizing_brief: "Analysing Core Themes",
+  brief_ready: "Synthesis Ready",
   generating_chapters: "Generating Timestamped Chapters",
-  chapters_generated: "Chapters Generated",
-  generating_blog: "Generating SEO Blog Post",
-  blog_generated: "Blog Post Generated",
-  generating_tweets: "Generating Twitter Thread",
-  tweets_generated: "Twitter Thread Generated",
-  generating_linkedin: "Generating LinkedIn Thought Leadership",
-  linkedin_generated: "LinkedIn Post Generated",
-  critiquing_assets: "Critiquing & Verifying Outputs",
-  critique_completed: "Critique Completed",
-  job_completed: "Completed — Finalizing Assets",
-  job_failed: "Pipeline Failed",
+  chapters_generated: "Chapters Ready",
+  generating_blog: "Writing SEO Blog Post",
+  blog_generated: "Blog Post Ready",
+  generating_tweets: "Crafting Twitter/X Thread",
+  tweets_generated: "Twitter Thread Ready",
+  generating_linkedin: "Drafting LinkedIn Insights",
+  linkedin_generated: "LinkedIn Post Ready",
+  critiquing_assets: "Evaluating Tone & Verifying Quotes",
+  verifying_assets: "Evaluating Tone & Verifying Accuracy",
+  critique_completed: "Quality Verification Complete",
+  retrying_assets: "Refining Generated Assets",
+  job_completed: "Finalizing Content Assets",
+  job_failed: "Pipeline Interrupted",
 };
 
-export default function SSEProgressTicker({ jobId, onCompleted, onFailed }: SSEProgressTickerProps) {
+export default function SSEProgressTicker({
+  jobId,
+  onCompleted,
+  onFailed,
+}: SSEProgressTickerProps) {
   const [logs, setLogs] = useState<EventLog[]>([]);
-  const [currentStage, setCurrentStage] = useState("Initializing Engine...");
+  const [currentStage, setCurrentStage] = useState("Analysing video & initializing AI models...");
   const [isCompleted, setIsCompleted] = useState(false);
   const isTerminatedRef = useRef(false);
 
@@ -115,13 +123,25 @@ export default function SSEProgressTicker({ jobId, onCompleted, onFailed }: SSEP
           }
         }
 
-        const rawType = event.type && event.type !== "message" ? event.type : null;
-        const stage = rawType || parsed.stage || parsed.event || parsed.event_type || "progress";
+        const rawType =
+          event.type && event.type !== "message" ? event.type : null;
+        const stage =
+          rawType ||
+          parsed.stage ||
+          parsed.event ||
+          parsed.event_type ||
+          "progress";
         const displayLabel = STAGE_LABELS[stage] || stage;
-        const msg =
+        const rawMsg =
           parsed.message ||
           (parsed.payload?.message ? parsed.payload.message : "") ||
           displayLabel;
+
+        // Clean user-facing text: strip internal keywords
+        const msg = String(rawMsg)
+          .replace(/worker/gi, "pipeline engine")
+          .replace(/redis/gi, "event stream")
+          .replace(/arq/gi, "processing queue");
 
         const timeStr = new Date().toLocaleTimeString();
 
@@ -149,7 +169,12 @@ export default function SSEProgressTicker({ jobId, onCompleted, onFailed }: SSEP
           stage === "failed" ||
           parsed.status === "failed"
         ) {
-          triggerFail(parsed.payload?.error || parsed.error || msg || "Job failed during processing.");
+          triggerFail(
+            parsed.payload?.error ||
+              parsed.error ||
+              msg ||
+              "Job failed during processing.",
+          );
         }
       } catch (e) {
         console.error("Failed to parse SSE event", e);
@@ -184,7 +209,10 @@ export default function SSEProgressTicker({ jobId, onCompleted, onFailed }: SSEP
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.status === "completed" || data.status === "partial_success") {
+          if (
+            data.status === "completed" ||
+            data.status === "partial_success"
+          ) {
             triggerComplete();
           } else if (data.status === "failed") {
             triggerFail(data.error_message || "Job execution failed.");
@@ -211,7 +239,9 @@ export default function SSEProgressTicker({ jobId, onCompleted, onFailed }: SSEP
       <div className="flex items-center justify-between border-b border-foreground pb-3 mb-4">
         <div className="flex items-center gap-2">
           <Terminal className="w-5 h-5 text-accent" />
-          <h3 className="font-serif text-lg font-bold">Live Repurposing Engine Ticker</h3>
+          <h3 className="font-serif text-lg font-bold">
+            Content Transformation in Progress
+          </h3>
         </div>
         <div className="flex items-center gap-2">
           {isCompleted ? (
@@ -220,7 +250,7 @@ export default function SSEProgressTicker({ jobId, onCompleted, onFailed }: SSEP
             <div className="h-2.5 w-2.5 bg-accent animate-pulse" />
           )}
           <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            Job #{jobId} {isCompleted ? "● COMPLETED" : "● ACTIVE"}
+            {isCompleted ? "● READY" : "● IN PROGRESS"}
           </span>
         </div>
       </div>
@@ -247,13 +277,20 @@ export default function SSEProgressTicker({ jobId, onCompleted, onFailed }: SSEP
         {logs.length === 0 ? (
           <div className="text-muted-foreground italic flex items-center gap-2">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            Connecting to Redis ARQ worker event stream...
+            Connecting to content pipeline and preparing models...
           </div>
         ) : (
           logs.map((log) => (
-            <div key={log.id} className="flex items-start gap-2 border-l border-foreground/30 pl-2 py-0.5">
-              <span className="text-muted-foreground text-[10px]">[{log.time}]</span>
-              <span className="text-accent uppercase text-[10px] font-bold">[{log.stage}]</span>
+            <div
+              key={log.id}
+              className="flex items-start gap-2 border-l border-foreground/30 pl-2 py-0.5"
+            >
+              <span className="text-muted-foreground text-[10px]">
+                [{log.time}]
+              </span>
+              <span className="text-accent uppercase text-[10px] font-bold">
+                [{log.stage}]
+              </span>
               <span className="text-foreground/90 flex-1">{log.message}</span>
             </div>
           ))

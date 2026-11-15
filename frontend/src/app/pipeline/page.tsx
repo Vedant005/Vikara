@@ -13,6 +13,7 @@ import {
   Download,
   Video,
   Trash2,
+  ExternalLink,
 } from "lucide-react";
 import YouTubeInput from "@/components/YouTubeInput";
 import AssetEditor from "@/components/AssetEditor";
@@ -27,7 +28,19 @@ interface HistoryItem {
   youtube_url: string;
   status: string;
   created_at: string;
+  title?: string | null;
 }
+
+const formatCollapsedUrl = (url: string): string => {
+  try {
+    const parsed = new URL(url);
+    const id = parsed.searchParams.get("v") || parsed.pathname.slice(1);
+    const host = parsed.hostname.replace("www.", "");
+    return `${host}/${id ? id.slice(0, 10) + "..." : ""}`;
+  } catch {
+    return url.length > 28 ? url.slice(0, 25) + "..." : url;
+  }
+};
 
 const Pipeline = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -230,6 +243,25 @@ const Pipeline = () => {
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
+        if (response.status === 409 && errJson.detail) {
+          const match = errJson.detail.match(/Job #(\d+)/i);
+          if (match && match[1]) {
+            const existingId = parseInt(match[1], 10);
+            fetchHistory();
+            if (
+              errJson.detail.includes("already active") ||
+              errJson.detail.includes("queued") ||
+              errJson.detail.includes("processing")
+            ) {
+              setActiveJobId(existingId);
+              setIsLoading(true);
+              return;
+            } else {
+              await loadJobAssets(existingId);
+              return;
+            }
+          }
+        }
         throw new Error(
           errJson.detail || "Failed to submit video for repurposing.",
         );
@@ -249,7 +281,7 @@ const Pipeline = () => {
   const handleExportAll = () => {
     if (!results) return;
     const bundleText = `================================================================================
-CONTENT REPURPOSING STUDIO v2.0 - PUBLICATION BUNDLE
+VIKARA v2.0 - PUBLICATION BUNDLE
 Source Video: ${videoUrl}
 Generated at: ${new Date().toISOString()}
 ================================================================================
@@ -302,7 +334,7 @@ ${
             ● The Pipeline
           </span>
           <h2 className="font-serif text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter leading-[0.9] mt-3">
-            Content Repurposing Studio
+            Vikara | Video Repurposing Studio
           </h2>
           <p className="font-body text-muted-foreground mt-4 max-w-xl">
             Transform YouTube videos into SEO blog posts, Twitter threads,
@@ -312,15 +344,12 @@ ${
         </div>
       </section>
 
-      {/* Input & Persona Section */}
       <section className="border-b border-foreground">
         <div className="container py-8 md:py-10">
-          <CostAndQualityBadge />
+          {/* <CostAndQualityBadge /> */}
 
-          {/* Brand Profile Voice Selector */}
           <BrandProfileSelector onProfileCreated={fetchBrandProfiles} />
 
-          {/* YouTube Input Box */}
           <YouTubeInput onSubmit={handleSubmit} isLoading={isLoading} />
         </div>
       </section>
@@ -344,7 +373,9 @@ ${
               <div className="border-2 border-foreground bg-background p-6 shadow-[6px_6px_0px_0px_hsl(0_0%_7%)] mb-8 flex items-center justify-between">
                 <div className="flex items-center gap-3 font-mono text-sm font-semibold">
                   <Loader2 className="w-5 h-5 animate-spin text-accent" />
-                  <span>Submitting video to processing queue...</span>
+                  <span>
+                    Fetching video details and initializing AI pipeline...
+                  </span>
                 </div>
                 <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground animate-pulse">
                   [INITIALIZING]
@@ -402,10 +433,21 @@ ${
                         : "opacity-80 cursor-default"
                     } ${activeJobId === item.id ? "border-foreground bg-muted/30" : ""}`}
                   >
-                    <div className="truncate pr-4 flex-1">
-                      <p className="font-mono text-sm truncate">
-                        {item.youtube_url}
-                      </p>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5 truncate pr-4 flex-1">
+                      <span className="font-serif font-bold text-sm truncate text-foreground">
+                        {item.title || "YouTube Video"}
+                      </span>
+                      <a
+                        href={item.youtube_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        title={`Open in YouTube: ${item.youtube_url}`}
+                        className="font-mono text-xs text-muted-foreground hover:text-accent hover:underline flex items-center gap-1 shrink-0 group/link transition-colors"
+                      >
+                        <span>({formatCollapsedUrl(item.youtube_url)})</span>
+                        <ExternalLink className="w-3 h-3 opacity-60 group-hover/link:opacity-100 shrink-0" />
+                      </a>
                     </div>
                     <div className="flex items-center gap-3">
                       <span

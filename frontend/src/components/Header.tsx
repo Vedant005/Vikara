@@ -22,7 +22,7 @@ const Header = () => {
         <Link href="/" className="flex items-center gap-3">
           <div>
             <h1 className="font-serif text-2xl md:text-3xl font-black tracking-tight leading-none">
-              The Repurposer
+              VIKARA
             </h1>
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               YouTube → Blog → Tweets → LinkedIn

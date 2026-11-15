@@ -10,7 +10,7 @@ const Footer = () => {
         <div className="max-w-screen-xl mx-auto px-4 lg:px-8 grid grid-cols-1 md:grid-cols-12 gap-8">
           <div className="md:col-span-5 md:border-r md:border-foreground md:pr-8">
             <h3 className="font-serif text-2xl font-black uppercase mb-4">
-              The Repurposer
+              VIKARA
             </h3>
             <p className="font-body text-sm  leading-relaxed text-justify">
               Transform your YouTube content into SEO-optimized blog posts,
@@ -81,7 +81,7 @@ const Footer = () => {
               </a>
             </div>
             <p className="font-mono text-md">
-              © {new Date().getFullYear()} The Repurposer
+              © {new Date().getFullYear()} VIKARA
             </p>
           </div>
         </div>
