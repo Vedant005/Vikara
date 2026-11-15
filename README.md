@@ -1,6 +1,6 @@
-# Content Repurposing Studio
+# Vikara | Video Repurposing Pipeline
 
-Content Repurposing Studio is an enterprise-grade AI automation pipeline that ingests a YouTube video URL and orchestrates a multi-stage LangGraph workflow to produce production-ready content assets: an SEO-optimized blog article, an engagement-driven Twitter/X thread, a thought-leadership LinkedIn post, and timestamped video chapters with grounded quotes.
+Vikara is an enterprise-grade AI automation pipeline that ingests a YouTube video URL and orchestrates a multi-stage LangGraph workflow to produce production-ready content assets: an SEO-optimized blog article, an engagement-driven Twitter/X thread, a thought-leadership LinkedIn post, and timestamped video chapters with grounded quotes.
 
 The system combines a FastAPI backend, LangGraph state-graph pipeline, ARQ distributed worker queue, Redis Pub/Sub, PostgreSQL storage, Groq multi-model inference, and a Next.js 16 editorial publication workbench.
 
